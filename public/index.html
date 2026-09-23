@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VORTEX // Tactical Vision & Telemetry Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              900: '#14532d',
+              accent: '#3b82f6',
+              danger: '#ef4444',
+              dark: '#0b0f19',
+              card: '#111827',
+              border: '#1f2937'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-brand-dark text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-brand-border bg-brand-card/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-brand-500/10 rounded-lg border border-brand-500/20 text-brand-500">
+          <i data-lucide="shield-alert" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold tracking-wider text-sm text-slate-100">VORTEX ENGINE <span class="text-xs font-mono text-brand-500 border border-brand-500/30 px-1.5 py-0.5 rounded ml-2">v2.4</span></h1>
+          <p class="text-xs text-slate-400 font-mono">EDGE_NODE_AMMAN_01</p>
+        </div>
+      </div>
+
+      <!-- Route Navigation -->
+      <nav class="flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-brand-border">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn active flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-brand-accent/20 text-white border border-brand-accent/30">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Live Ops
+        </button>
+        <button onclick="switchTab('filters')" id="nav-filters" class="nav-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white">
+          <i data-lucide="sliders" class="w-4 h-4"></i> Detection Rules
+        </button>
+        <button onclick="switchTab('facial')" id="nav-facial" class="nav-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white">
+          <i data-lucide="scan-face" class="w-4 h-4"></i> Face Rec
+        </button>
+        <button onclick="switchTab('logs')" id="nav-logs" class="nav-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white">
+          <i data-lucide="database" class="w-4 h-4"></i> Audit Logs
+        </button>
+      </nav>
+
+      <!-- System Telemetry Status -->
+      <div class="flex items-center gap-4 text-xs font-mono">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-brand-border">
+          <span id="socket-status-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span id="socket-status-text" class="text-slate-400">CONNECTING</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+    
+    <!-- PAGE 1: LIVE OPS COMMAND -->
+    <section id="page-dashboard" class="tab-page space-y-6">
+      <!-- Status KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-brand-card p-4 rounded-xl border border-brand-border">
+          <div class="flex justify-between items-start text-slate-400">
+            <span class="text-xs font-medium">Zone Status</span>
+            <i data-lucide="radar" class="w-4 h-4 text-brand-500"></i>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="kpi-status" class="text-xl font-bold font-mono text-emerald-400">SECURE</span>
+          </div>
+        </div>
+        <div class="bg-brand-card p-4 rounded-xl border border-brand-border">
+          <div class="flex justify-between items-start text-slate-400">
+            <span class="text-xs font-medium">In-Zone Targets</span>
+            <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i>
+          </div>
+          <div class="mt-2">
+            <span id="kpi-in-zone" class="text-2xl font-bold font-mono text-slate-100">0</span>
+          </div>
+        </div>
+        <div class="bg-brand-card p-4 rounded-xl border border-brand-border">
+          <div class="flex justify-between items-start text-slate-400">
+            <span class="text-xs font-medium">Frame Processing</span>
+            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="mt-2">
+            <span id="kpi-fps" class="text-2xl font-bold font-mono text-slate-100">0 <span class="text-xs font-normal text-slate-400">FPS</span></span>
+          </div>
+        </div>
+        <div class="bg-brand-card p-4 rounded-xl border border-brand-border">
+          <div class="flex justify-between items-start text-slate-400">
+            <span class="text-xs font-medium">Total Objects Tracked</span>
+            <i data-lucide="box" class="w-4 h-4 text-indigo-400"></i>
+          </div>
+          <div class="mt-2">
+            <span id="kpi-total" class="text-2xl font-bold font-mono text-slate-100">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stream Feed + Real-Time Terminal -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Visual Stream Viewport -->
+        <div class="lg:col-span-2 bg-brand-card rounded-xl border border-brand-border overflow-hidden flex flex-col">
+          <div class="p-3 border-b border-brand-border bg-slate-900/50 flex justify-between items-center text-xs">
+            <span class="font-mono text-slate-400 flex items-center gap-2"><i data-lucide="video" class="w-4 h-4 text-brand-500"></i> PRIMARY_FEED // 960x540</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/20">LIVE</span>
+          </div>
+          <div class="relative bg-black flex-1 flex items-center justify-center min-h-[380px]">
+            <div id="stream-placeholder" class="text-center p-6 space-y-3">
+              <i data-lucide="camera-off" class="w-12 h-12 text-slate-600 mx-auto animate-pulse"></i>
+              <p class="text-xs font-mono text-slate-500">WAITING FOR PYTHON EDGE STREAM...</p>
+              <p class="text-[10px] text-slate-600">Run <code class="text-brand-500 font-mono">python main.py</code> to initialize feed</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Socket Stream Terminal -->
+        <div class="bg-brand-card rounded-xl border border-brand-border flex flex-col h-[440px]">
+          <div class="p-3 border-b border-brand-border bg-slate-900/50 flex justify-between items-center text-xs">
+            <span class="font-mono text-slate-400 flex items-center gap-2"><i data-lucide="terminal" class="w-4 h-4 text-brand-accent"></i> WEBSOCKET EVENT STREAM</span>
+            <button onclick="clearTerminal()" class="text-slate-500 hover:text-slate-300"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div id="terminal-logs" class="flex-1 p-3 font-mono text-[11px] overflow-y-auto space-y-2 bg-black/40">
+            <div class="text-slate-500">// System initialized. Awaiting spatial telemetry...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: DETECTION RULES & CLASS FILTERS -->
+    <section id="page-filters" class="tab-page hidden space-y-6">
+      <div class="bg-brand-card p-6 rounded-xl border border-brand-border space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2"><i data-lucide="filter" class="w-5 h-5 text-brand-accent"></i> Class Detection Matrix</h2>
+          <p class="text-xs text-slate-400 mt-1">Configure active COCO class targets for the edge inference node.</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Person (0)</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Cell Phone (67)</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Laptop (63)</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Chair (56)</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Vehicles (2, 3, 5, 7)</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 bg-slate-900/60 rounded-lg border border-brand-border cursor-pointer hover:border-brand-accent/50">
+            <input type="checkbox" checked class="rounded border-slate-700 text-brand-accent focus:ring-0">
+            <span class="text-xs font-medium">Backpack / Bags (24, 26)</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: FACIAL RECOGNITION HUB -->
+    <section id="page-facial" class="tab-page hidden space-y-6">
+      <div class="bg-brand-card p-6 rounded-xl border border-brand-border space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2"><i data-lucide="scan-face" class="w-5 h-5 text-indigo-400"></i> Biometric Facial Index</h2>
+            <p class="text-xs text-slate-400 mt-1">Real-time facial vector feature extraction and identity matching.</p>
+          </div>
+          <button class="px-3 py-1.5 bg-brand-accent hover:bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Enroll Identity
+          </button>
+        </div>
+        <div class="p-8 text-center border border-dashed border-brand-border rounded-xl">
+          <i data-lucide="fingerprint" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+          <p class="text-xs font-mono text-slate-400">FACIAL RECOGNITION PIPELINE STANDBY</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4: AUDIT & FORENSICS LOGS -->
+    <section id="page-logs" class="tab-page hidden space-y-6">
+      <div class="bg-brand-card rounded-xl border border-brand-border overflow-hidden">
+        <div class="p-4 border-b border-brand-border flex justify-between items-center bg-slate-900/50">
+          <h2 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Historical Database Audit Trail</h2>
+          <button onclick="fetchAuditLogs()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs border border-brand-border flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Logs
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900 text-slate-400 border-b border-brand-border">
+              <tr>
+                <th class="p-3">ID</th>
+                <th class="p-3">NODE</th>
+                <th class="p-3">TIMESTAMP</th>
+                <th class="p-3">ZONE COUNT</th>
+                <th class="p-3">TOTAL DETECTED</th>
+                <th class="p-3">PAYLOAD</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body" class="divide-y divide-brand-border text-slate-300">
+              <tr>
+                <td colspan="6" class="p-4 text-center text-slate-500">Loading database records...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Client SPA Script -->
+  <script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    // Navigation Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-page').forEach(page => page.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-accent/20', 'text-white', 'border', 'border-brand-accent/30');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`page-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      activeBtn.classList.add('bg-brand-accent/20', 'text-white', 'border', 'border-brand-accent/30');
+      
+      if (tabId === 'logs') fetchAuditLogs();
+    }
+
+    // Initialize Socket.IO Connection explicitly bound to port 5000
+    const socket = io('http://localhost:5000');
+
+    socket.on('connect', () => {
+      document.getElementById('socket-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-500';
+      document.getElementById('socket-status-text').innerText = 'GATEWAY ONLINE';
+      document.getElementById('socket-status-text').className = 'text-emerald-400 font-bold';
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('socket-status-dot').className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
+      document.getElementById('socket-status-text').innerText = 'DISCONNECTED';
+      document.getElementById('socket-status-text').className = 'text-red-400';
+    });
+
+    // Real-Time Telemetry Stream Handler
+    socket.on('telemetry:intrusion_alert', (data) => {
+      // Update KPIs
+      document.getElementById('kpi-in-zone').innerText = data.in_zone_count;
+      document.getElementById('kpi-total').innerText = data.total_detected;
+      document.getElementById('kpi-fps').innerHTML = `${data.fps || 0} <span class="text-xs font-normal text-slate-400">FPS</span>`;
+
+      const statusEl = document.getElementById('kpi-status');
+      if (data.in_zone_count > 0) {
+        statusEl.innerText = 'BREACH ALERT';
+        statusEl.className = 'text-xl font-bold font-mono text-red-500 animate-pulse';
+      } else {
+        statusEl.innerText = 'SECURE';
+        statusEl.className = 'text-xl font-bold font-mono text-emerald-400';
+      }
+
+      // Append Terminal Event
+      const terminal = document.getElementById('terminal-logs');
+      const entry = document.createElement('div');
+      entry.className = data.in_zone_count > 0 ? 'text-red-400' : 'text-slate-300';
+      entry.innerHTML = `<span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> <span class="font-bold">${data.status}</span> | Node: ${data.node_id} | In-Zone: ${data.in_zone_count}`;
+      terminal.prepend(entry);
+    });
+
+    function clearTerminal() {
+      document.getElementById('terminal-logs').innerHTML = '<div class="text-slate-500">// Terminal cleared.</div>';
+    }
+
+    // Fetch Database Audit Logs
+    async function fetchAuditLogs() {
+      const tbody = document.getElementById('logs-table-body');
+      try {
+        const res = await fetch('/api/v1/telemetry/logs');
+        const logs = await res.json();
+
+        if (logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No logs found in database.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = logs.map(log => `
+          <tr class="hover:bg-slate-900/50">
+            <td class="p-3 text-slate-400">#${log.id}</td>
+            <td class="p-3 font-bold text-brand-accent">${log.node_id}</td>
+            <td class="p-3 text-slate-400">${new Date(log.timestamp).toLocaleString()}</td>
+            <td class="p-3 ${log.in_zone_count > 0 ? 'text-red-400 font-bold' : 'text-slate-300'}">${log.in_zone_count}</td>
+            <td class="p-3">${log.total_detected}</td>
+            <td class="p-3 text-[10px] text-slate-500 max-w-xs truncate">${JSON.stringify(log.objects_payload)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-400">Failed to load logs: ${err.message}</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
