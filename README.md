@@ -1,20 +1,36 @@
-# Picars - Real-Time Edge Computer Vision & Security System
+# 🌐 Picars: Integrated Fleet Telemetry & AI Security System
 
-A high-performance computer vision and security intrusion detection system built with Python, OpenCV, and YOLOv8. Designed to process live video streams, execute custom spatial boundary logic, and trigger automated security alerts.
+![Node.js](https://img.shields.io/badge/Node.js-Backend-green) ![Python](https://img.shields.io/badge/Python-Computer_Vision-blue) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-yellow) ![OpenCV](https://img.shields.io/badge/OpenCV-Image_Processing-red)
 
-## Architecture & Features
-* **Edge AI Inference:** Utilizes YOLOv8n (Ultralytics / PyTorch) optimized for real-time object detection and tracking[cite: 1].
-* **Spatial Polygon Intrusion Detection:** Implements custom point-in-polygon geometry algorithms (`pointPolygonTest`) to monitor restricted security zones dynamically[cite: 1].
-* **Asynchronous Alert Pipelines:** Features threaded background workers and event handlers to prevent frame drops and ensure low-latency telemetry logging[cite: 1].
-* **Multi-Stream Support:** Capable of processing local media test feeds as well as RTSP security camera streams[cite: 1].
+**Picars** is a comprehensive, full-stack ecosystem designed to solve two major operational challenges: **real-time fleet telemetry tracking** and **automated edge-AI perimeter security**. 
 
-## Tech Stack
-* **Language:** Python 3.11+[cite: 1]
-* **Computer Vision & AI:** OpenCV, YOLOv8, PyTorch, NumPy[cite: 1]
-* **Concurrency:** Python `threading` for non-blocking stream ingestion and alert dispatching[cite: 1]
+By bridging a robust Node.js backend with an advanced Python-based computer vision module, this system ingests live data streams, processes spatial intrusion algorithms, and maintains a persistent operational state.
 
-## Quick Start
-1. Clone the repository and set up a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+---
+
+## ✨ Key Features
+
+### 📡 1. Predictive Fleet Telemetry (Backend API)
+* **Real-Time Data Streaming:** Built on Node.js and Express to handle high-frequency data ingestion from simulated fleet vehicles.
+* **WebSocket Integration:** Enables live, bi-directional communication for real-time dashboard updates.
+* **Persistent Storage:** Utilizes PostgreSQL/SQLite for robust data logging, querying, and state management.
+* **Scalable Architecture:** Designed with modular API routes to separate telemetry ingestion from user authentication and system logs.
+
+### 👁️ 2. Edge-AI Intrusion Detection (Computer Vision)
+* **Real-Time Object Detection:** Leverages Ultralytics YOLOv8 and PyTorch to process live video feeds with minimal latency.
+* **Spatial Tracking:** Implements custom Point-in-Polygon (PIP) mathematical algorithms using OpenCV to define dynamic security boundaries.
+* **Automated Threat Alerting:** Instantly detects when unauthorized entities breach designated polygon zones.
+* **Performance Optimized:** Uses Polars and NumPy for high-speed data frame manipulation and array calculations during frame-by-frame analysis.
+
+---
+
+## 🏗️ System Architecture
+
+The project is split into two independent but complementary modules, allowing for isolated testing, scaling, and deployment.
+
+```text
+[ Live Video Feed ]  -->  [ Python / YOLOv8 Module ]  -->  [ Local Event Logs ]
+                                    |
+                             (Future API Link)
+                                    |
+[ Fleet Simulators ] -->  [ Node.js / Express API ]   -->  [ SQL Database ]
